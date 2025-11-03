@@ -1,0 +1,21 @@
+body {
+    font-family: "Noto Sans", sans-serif;
+    color: #444444;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Nunito", sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+.container {
+    background-color: #fff;
+}
+
+.border-leiden {
+    border-width: 2.5rem !important;
+    border-color: #7f88ab !important;
+}
