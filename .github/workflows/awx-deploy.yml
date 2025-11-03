@@ -1,0 +1,103 @@
+name: Deploy container using AWX (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      awx_url:
+        description: "Base AWX URL"
+        required: false
+        type: string
+        default: "https://awx-oasible.leidenuniv.nl"
+      job_template_id:
+        description: "AWX Job Template ID to launch"
+        required: true
+        type: number
+      image:
+        description: "Fully-qualified image name, e.g. ghcr.io/org/app"
+        required: true
+        type: string
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+        type: string
+      registry_user:
+        description: "Registry username (often github.actor)"
+        required: true
+        type: string
+
+    secrets:
+      awx_token:
+        required: true
+        description: "Bearer token for AWX API"
+
+jobs:
+  deploy-awx:
+    runs-on:
+      - oas-github-runner
+
+    steps:
+      - name: Launch AWX job
+        id: launch
+        env:
+          AWX_URL: ${{ inputs.awx_url }}
+          JOB_TEMPLATE_ID: ${{ inputs.job_template_id }}
+          IMAGE: ${{ inputs.image }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          REGISTRY_USER: ${{ inputs.registry_user }}
+          # In called workflows you get a scoped token as github.token
+          REGISTRY_TOKEN: ${{ github.token }}
+          AWX_TOKEN: ${{ secrets.awx_token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Launching AWX job template ${JOB_TEMPLATE_ID} at ${AWX_URL}"
+
+          payload=$(jq -nc \
+            --arg image "$IMAGE" \
+            --arg image_tag "$IMAGE_TAG" \
+            --arg registry_token "$REGISTRY_TOKEN" \
+            --arg registry_user "$REGISTRY_USER" \
+            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user}}')
+
+          resp="$(curl -sSf -X POST \
+            -H "Authorization: Bearer ${AWX_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "${payload}" \
+            "${AWX_URL}/api/v2/job_templates/${JOB_TEMPLATE_ID}/launch/")"
+
+          echo "$resp"
+          job_id="$(echo "$resp" | jq -r '.job')"
+          if [[ -z "$job_id" || "$job_id" == "null" ]]; then
+            echo "Failed to parse job id from AWX response" >&2
+            exit 1
+          fi
+          echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for AWX & stream logs
+        env:
+          AWX_URL: ${{ inputs.awx_url }}
+          JOB_ID: ${{ steps.launch.outputs.job_id }}
+          AWX_TOKEN: ${{ secrets.awx_token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Waiting for AWX job ${JOB_ID} ..."
+          while :; do
+            status="$(curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
+              "${AWX_URL}/api/v2/jobs/${JOB_ID}/" | jq -r '.status')"
+            echo "Status: ${status}"
+            case "$status" in
+              successful|failed|error|canceled) break ;;
+            esac
+            sleep 10
+          done
+
+          echo "----- AWX job ${JOB_ID} output -----"
+          curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
+            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
+
+          if [[ "$status" != "successful" ]]; then
+            echo "AWX job ended with status: $status" >&2
+            exit 1
+          fi
