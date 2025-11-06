@@ -3,25 +3,16 @@ name: Deploy container using AWX (reusable)
 on:
   workflow_call:
     inputs:
-      awx_url:
+      awx_job_url:
         description: "Base AWX URL"
         required: false
         type: string
-        default: "https://awx-oasible.leidenuniv.nl"
-      job_template_id:
-        description: "AWX Job Template ID to launch"
-        required: true
-        type: number
       image:
         description: "Fully-qualified image name, e.g. ghcr.io/org/app"
         required: true
         type: string
       image_tag:
         description: "Image tag to deploy"
-        required: true
-        type: string
-      registry_user:
-        description: "Registry username (often github.actor)"
         required: true
         type: string
 
@@ -39,11 +30,10 @@ jobs:
       - name: Launch AWX job
         id: launch
         env:
-          AWX_URL: ${{ inputs.awx_url }}
-          JOB_TEMPLATE_ID: ${{ inputs.job_template_id }}
+          AWX_JOB_URL: ${{ inputs.awx_job_url }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          REGISTRY_USER: ${{ inputs.registry_user }}
+          REGISTRY_USER: ${{ github.actor }}
           # In called workflows you get a scoped token as github.token
           REGISTRY_TOKEN: ${{ github.token }}
           AWX_TOKEN: ${{ secrets.awx_token }}
@@ -51,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Launching AWX job template ${JOB_TEMPLATE_ID} at ${AWX_URL}"
+          echo "Launching AWX job template ${JOB_TEMPLATE_ID} at ${AWX_JOB_URL}"
 
           payload=$(jq -nc \
             --arg image "$IMAGE" \
@@ -64,8 +54,9 @@ jobs:
             -H "Authorization: Bearer ${AWX_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "${payload}" \
-            "${AWX_URL}/api/v2/job_templates/${JOB_TEMPLATE_ID}/launch/")"
-
+            "${AWX_JOB_URL}")"
+          
+          
           echo "$resp"
           job_id="$(echo "$resp" | jq -r '.job')"
           if [[ -z "$job_id" || "$job_id" == "null" ]]; then
@@ -76,12 +67,13 @@ jobs:
 
       - name: Wait for AWX & stream logs
         env:
-          AWX_URL: ${{ inputs.awx_url }}
+          AWX_JOB_URL: ${{ inputs.awx_job_url }}
           JOB_ID: ${{ steps.launch.outputs.job_id }}
           AWX_TOKEN: ${{ secrets.awx_token }}
         shell: bash
         run: |
           set -euo pipefail
+          AWX_URL="${AWX_JOB_URL%%/api/*}"
           echo "Waiting for AWX job ${JOB_ID} ..."
           while :; do
             status="$(curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
