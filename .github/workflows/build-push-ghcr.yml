@@ -4,11 +4,6 @@ name: Build & Push to GHCR
 on:
   workflow_call:
     inputs:
-      registry:
-        description: Container registry hostname
-        required: false
-        default: ghcr.io
-        type: string
       image_name:
         description: Repository/image name (e.g., handle-service)
         default: ${{ github.repository }}
@@ -28,11 +23,6 @@ on:
         description: Branch that should also get the :latest tag
         required: false
         default: main
-        type: string
-      develop_branch:
-        description: Branch that should also get the :latest tag
-        required: false
-        default: develop
         type: string
     outputs:
       image:
