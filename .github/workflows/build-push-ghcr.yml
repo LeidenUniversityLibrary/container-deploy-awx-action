@@ -44,7 +44,6 @@ jobs:
       image: ${{ steps.prep.outputs.image }}
       branch_tag: ${{ steps.prep.outputs.branch_tag }}
     env:
-      REGISTRY: ${{ inputs.registry }}
       IMAGE_NAME: ${{ inputs.image_name }}
     steps:
       - name: Checkout
@@ -59,7 +58,6 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ inputs.registry }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -70,7 +68,7 @@ jobs:
           set -euo pipefail
 
           OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE="${REGISTRY}/${OWNER_LC}/${IMAGE_NAME}"
+          IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_NAME}"
 
           # branch tag: lowercase, replace slashes with dashes
           BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
