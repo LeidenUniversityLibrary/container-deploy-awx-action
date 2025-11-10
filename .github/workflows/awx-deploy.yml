@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Launching AWX job template ${JOB_TEMPLATE_ID} at ${AWX_JOB_URL}"
+          echo "Launching AWX deploy job"
 
           payload=$(jq -nc \
             --arg image "$IMAGE" \
