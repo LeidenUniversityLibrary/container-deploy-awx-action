@@ -1,0 +1,84 @@
+name: Build and Push to DockerHub
+
+env:
+  IMAGE_NAME: ${{ github.repository }}
+  PRODUCTION_BRANCH: main
+  CONTEXT: .
+  CONTAINERFILE: Containerfile
+  
+on:
+  workflow_call:
+    outputs:
+      image:
+        description: Fully-qualified image name (registry/owner/image)
+        value: ${{ jobs.build-push.outputs.image }}
+      branch_tag:
+        description: Branch-derived tag used for deployment
+        value: ${{ jobs.build-push.outputs.branch_tag }}
+
+# Needed so GITHUB_TOKEN can publish to GHCR packages
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.prep.outputs.image }}
+      branch_tag: ${{ steps.prep.outputs.branch_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Prepare image & tags
+        id: prep
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE="$(echo "ghcr.io/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')"
+
+          # branch tag: lowercase, replace slashes with dashes
+          BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
+          SHA_TAG="${GITHUB_SHA::7}"
+
+          # Always tag with branch and short SHA
+          TAGS="${IMAGE}:${BRANCH_TAG}\n${IMAGE}:${SHA_TAG}"
+
+          # Add :latest on production branch
+          if [ "${GITHUB_REF_NAME}" = "${PRODUCTION_BRANCH}" ]; then
+            TAGS="${TAGS}\n${IMAGE}:latest"
+          fi
+
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
+          {
+            echo "tags<<EOF"
+            echo -e "$TAGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.CONTEXT }}
+          file: ${{ env.CONTAINERFILE }}
+          push: true
+          tags: ${{ steps.prep.outputs.tags }}
