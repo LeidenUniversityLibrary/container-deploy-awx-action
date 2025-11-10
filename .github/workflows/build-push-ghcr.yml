@@ -5,7 +5,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   PRODUCTION_BRANCH: main
   CONTEXT: .
-  DOCKERFILE: Containerfile
+  CONTAINERFILE: Containerfile
   
 
 on:
@@ -80,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.CONTEXT }}
-          file: ${{ env.DOCKERFILE }}
+          file: ${{ env.CONTAINERFILE }}
           push: true
           tags: ${{ steps.prep.outputs.tags }}
           cache-from: type=gha
