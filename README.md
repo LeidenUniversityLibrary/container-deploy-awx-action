@@ -33,8 +33,8 @@ permissions:
   packages: write
 
 env:
-  # IMAGE_NAME: # Name you want this image to be. Will use owner/repository-name by default
-  # PRODUCTION_BRANCH: # Which branch do you want to use to push production? "main" by default
+  # IMAGE_NAME: # Name you want this image to be. Will use owner/repository-name by default.
+  # PRODUCTION_BRANCH: # Which branch do you want to use to push production? "main" by default.
   # CONTEXT: # Which dir is the Containerfile? "." by default.  
   # CONTAINERFILE: # What's the name of the Containerfile? "Containerfile" by default.
 
