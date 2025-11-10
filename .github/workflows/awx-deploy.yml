@@ -3,10 +3,6 @@ name: Deploy container using AWX (reusable)
 on:
   workflow_call:
     inputs:
-      awx_job_url:
-        description: "Base AWX URL"
-        required: false
-        type: string
       image:
         description: "Fully-qualified image name, e.g. ghcr.io/org/app"
         required: true
@@ -30,7 +26,7 @@ jobs:
       - name: Launch AWX job
         id: launch
         env:
-          AWX_JOB_URL: ${{ inputs.awx_job_url }}
+          AWX_JOB_URL: ${{ env.AWX_JOB_URL }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           REGISTRY_USER: ${{ github.actor }}
