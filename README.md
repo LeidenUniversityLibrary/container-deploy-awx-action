@@ -11,6 +11,11 @@
 
 Repository for reusable GitHub Action to be used to deploy containers onto a given server. Launches an AWX job, managed by ISSC-OAS.
 
+## Requirements
+- Running and connect OAS GitHub runner
+- AWX_JOB_URL and AWX_TOKEN of appropriate AWX job (handed out by OAS)
+- Valid Docker-/Containerfile
+
 ## Example
 
 Example that should work if you copy it to your own workflow (eg. .github/workflow/.build-push-deploy.yml):
@@ -28,9 +33,10 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: handle-oas
-  AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
-  PRODUCTION_BRANCH: master
+  # IMAGE_NAME: ${{ github.repository }}
+  # PRODUCTION_BRANCH: main
+  # CONTEXT: .
+  # DOCKERFILE: Containerfile
 
 jobs:
   build-push-ghcr:

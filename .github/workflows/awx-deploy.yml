@@ -22,12 +22,12 @@ jobs:
         id: launch
         env:
           AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
+          AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           REGISTRY_USER: ${{ github.actor }}
           # In called workflows you get a scoped token as github.token
           REGISTRY_TOKEN: ${{ github.token }}
-          AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
