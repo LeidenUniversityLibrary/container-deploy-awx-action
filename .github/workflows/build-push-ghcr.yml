@@ -1,29 +1,15 @@
 # .github/workflows/build-push-ghcr.yml
 name: Build & Push to GHCR
 
+env:
+  IMAGE_NAME: ${{ github.repository }}
+  PRODUCTION_BRANCH: main
+  CONTEXT: .
+  DOCKERFILE: Containerfile
+  
+
 on:
   workflow_call:
-    inputs:
-      image_name:
-        description: Repository/image name (e.g., handle-service)
-        default: ${{ github.repository }}
-        required: false
-        type: string
-      context:
-        description: Build context
-        required: false
-        default: .
-        type: string
-      dockerfile:
-        description: Dockerfile/Containerfile path
-        required: false
-        default: Containerfile
-        type: string
-      production_branch:
-        description: Branch that should also get the :latest tag
-        required: false
-        default: main
-        type: string
     outputs:
       image:
         description: Fully-qualified image name (registry/owner/image)
@@ -43,8 +29,6 @@ jobs:
     outputs:
       image: ${{ steps.prep.outputs.image }}
       branch_tag: ${{ steps.prep.outputs.branch_tag }}
-    env:
-      IMAGE_NAME: ${{ inputs.image_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,7 +53,7 @@ jobs:
           set -euo pipefail
 
           OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_NAME}"
+          IMAGE="ghcr.io/${IMAGE_NAME}"
 
           # branch tag: lowercase, replace slashes with dashes
           BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
@@ -79,7 +63,7 @@ jobs:
           TAGS="${IMAGE}:${BRANCH_TAG}\n${IMAGE}:${SHA_TAG}"
 
           # Add :latest on production branch
-          if [ "${GITHUB_REF_NAME}" = "${{ inputs.production_branch }}" ]; then
+          if [ "${GITHUB_REF_NAME}" = "${PRODUCTION_BRANCH}" ]; then
             TAGS="${TAGS}\n${IMAGE}:latest"
           fi
 
@@ -95,8 +79,8 @@ jobs:
       - name: Build & Push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ inputs.context }}
-          file: ${{ inputs.dockerfile }}
+          context: ${{ env.CONTEXT }}
+          file: ${{ env.DOCKERFILE }}
           push: true
           tags: ${{ steps.prep.outputs.tags }}
           cache-from: type=gha
