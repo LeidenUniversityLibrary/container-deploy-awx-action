@@ -13,18 +13,36 @@ Repository for reusable GitHub Action to be used to deploy containers onto a giv
 
 ## Example
 
-Example where this is used:
-https://github.com/LeidenUniversityLibrary/handle-service/blob/development/.github/workflows/.build-push-deploy.yml
+Example that should work if you copy it to your own workflow (eg. .github/workflow/.build-push-deploy.yml):
+```
+name: Build, Push & Deploy 
 
-Code snippet calling the action:
- ```  deploy-awx:
-    needs: build-push
-    if: github.ref_name == 'development'
+on:
+  push:
+    branches: [ develop, master ]
+  workflow_dispatch:
+
+# Needed so GITHUB_TOKEN can publish to GHCR
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: handle-oas
+  AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
+  PRODUCTION_BRANCH: master
+
+jobs:
+  build-push-ghcr:
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@master
+    secrets: inherit
+  
+  deploy-awx:
+    needs: build-push-ghcr
+    if: github.ref_name == 'develop'
     uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@master
     with:
-      job_template_id: 38
-      image: ${{ needs.build-push.outputs.image }}
-      image_tag: ${{ needs.build-push.outputs.branch_tag }}
-      registry_user: ${{ github.actor }}
-    secrets: inherit
+      image: ${{ needs.build-push-ghcr.outputs.image }}
+      image_tag: ${{ needs.build-push-ghcr.outputs.branch_tag }}
+    secrets: inherit  
 ```
