@@ -42,7 +42,7 @@ jobs:
 
           # Export each secret as an environment variable
           for name in "${SECRET_NAMES[@]}"; do
-            value="${name}""
+            value="${name}"
             export "$name"="$value"
           done
 
