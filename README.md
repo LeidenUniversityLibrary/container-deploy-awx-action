@@ -32,15 +32,16 @@ permissions:
   contents: read
   packages: write
 
-env:
-  # IMAGE_NAME: # Name you want this image to be. Will use owner/repository-name by default.
-  # PRODUCTION_BRANCH: # Which branch do you want to use to push production? "main" by default.
-  # CONTEXT: # Which dir is the Containerfile? "." by default.  
-  # CONTAINERFILE: # What's the name of the Containerfile? "Containerfile" by default.
 
 jobs:
   build-push-ghcr:
     uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@master
+    secrets: inherit
+    with:
+      # image_name: LeidenUniversityLibrary/<reponame> # Name you want this image to be. Will use owner/repository-name by default.
+      # production_branch: main # Which branch do you want to use to push production and get latest tag? "main" by default
+      # context: . # Which dir is the Containerfile? "." by default. 
+      # containerfile: Containerfile # What's the name of the Containerfile? "Containerfile" by default.
     secrets: inherit
   
   deploy-awx:
