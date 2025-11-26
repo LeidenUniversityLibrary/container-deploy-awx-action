@@ -37,12 +37,11 @@ jobs:
   build-push-ghcr:
     uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@master
     secrets: inherit
-    with:
+    # with:
       # image_name: LeidenUniversityLibrary/<reponame> # Name you want this image to be. Will use owner/repository-name by default.
       # production_branch: main # Which branch do you want to use to push production and get latest tag? "main" by default
       # context: . # Which dir is the Containerfile? "." by default. 
       # containerfile: Containerfile # What's the name of the Containerfile? "Containerfile" by default.
-    secrets: inherit
   
   deploy-awx:
     needs: build-push-ghcr
