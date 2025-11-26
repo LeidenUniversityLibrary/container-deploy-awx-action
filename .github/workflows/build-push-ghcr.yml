@@ -1,22 +1,38 @@
 # .github/workflows/build-push-ghcr.yml
-name: Build & Push to GHCR
-
-env:
-  IMAGE_NAME: ${{ github.repository }}
-  PRODUCTION_BRANCH: main
-  CONTEXT: .
-  CONTAINERFILE: Containerfile
-  
+name: Build & Push to GHCR  
 
 on:
   workflow_call:
+    inputs:
+      image_name:
+        description: Base image name
+        required: false
+        type: string
+        default: ${{ github.repository }}
+
+      production_branch:
+        description: Branch for which 'latest' tag will be added
+        required: false
+        type: string
+        default: "main"
+
+      context:
+        description: Build context directory
+        required: false
+        type: string
+        default: "."
+
+      containerfile:
+        description: Path to Dockerfile/Containerfile inside the context
+        required: false
+        type: string
+        default: "Containerfile"
     outputs:
       image:
-        description: Fully-qualified image name (registry/owner/image)
         value: ${{ jobs.build-push.outputs.image }}
       branch_tag:
-        description: Branch-derived tag used for deployment
         value: ${{ jobs.build-push.outputs.branch_tag }}
+
 
 # Needed so GITHUB_TOKEN can publish to GHCR packages
 permissions:
@@ -53,7 +69,8 @@ jobs:
           set -euo pipefail
 
           OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE="$(echo "ghcr.io/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${{ inputs.image_name }}"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
 
           # branch tag: lowercase, replace slashes with dashes
           BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
@@ -63,7 +80,7 @@ jobs:
           TAGS="${IMAGE}:${BRANCH_TAG}\n${IMAGE}:${SHA_TAG}"
 
           # Add :latest on production branch
-          if [ "${GITHUB_REF_NAME}" = "${PRODUCTION_BRANCH}" ]; then
+          if [ "${GITHUB_REF_NAME}" = "${{ inputs.production_branch }}" ]; then
             TAGS="${TAGS}\n${IMAGE}:latest"
           fi
 
@@ -79,8 +96,8 @@ jobs:
       - name: Build & Push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.CONTEXT }}
-          file: ${{ env.CONTAINERFILE }}
+          context: ${{ inputs.context }}
+          file: ${{ inputs.containerfile }}
           push: true
           tags: ${{ steps.prep.outputs.tags }}
           cache-from: type=gha
