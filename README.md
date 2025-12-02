@@ -13,7 +13,7 @@ Repository for reusable GitHub Action to be used to deploy containers onto a giv
 
 ## Requirements
 - Running and connect OAS GitHub runner
-- AWX_JOB_URL and AWX_TOKEN of appropriate AWX job (handed out by OAS)
+- AWX_JOB_URL and AWX_TOKEN of appropriate AWX job (handed out by OAS) set up as Environment Secrets
 - Valid Docker-/Containerfile
 
 ## Example
