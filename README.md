@@ -24,7 +24,7 @@ name: Build, Push & Deploy
 
 on:
   push:
-    branches: [ develop, master ]
+    branches: [ staging, production ]
   workflow_dispatch:
 
 # Needed so GITHUB_TOKEN can publish to GHCR
@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   build-push-ghcr:
-    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@master
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@main
     secrets: inherit
     # with:
       # image_name: LeidenUniversityLibrary/<reponame> # Name you want this image to be. Will use owner/repository-name by default.
@@ -46,7 +46,7 @@ jobs:
   deploy-awx:
     needs: build-push-ghcr
     if: github.ref_name == 'develop'
-    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@master
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@main
     with:
       image: ${{ needs.build-push-ghcr.outputs.image }}
       image_tag: ${{ needs.build-push-ghcr.outputs.branch_tag }}
