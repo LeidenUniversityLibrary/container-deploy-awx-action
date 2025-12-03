@@ -45,7 +45,7 @@ jobs:
   
   deploy-awx:
     needs: build-push-ghcr
-    if: github.ref_name == 'develop'
+    if: github.ref_name == 'staging'
     uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@main
     with:
       image: ${{ needs.build-push-ghcr.outputs.image }}
