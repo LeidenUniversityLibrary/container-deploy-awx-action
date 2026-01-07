@@ -41,6 +41,7 @@ jobs:
           QUADLETS_REPO: ${{ inputs.quadlets_repo }}
           QUADLETS_REF: ${{ inputs.quadlets_ref }}
           ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
+          FERNET_KEY: ${{ secrets.FERNET_KEY  }}
         shell: bash
         run: |
           set -euo pipefail
@@ -77,6 +78,12 @@ jobs:
           if [ -n "${ENV_ENC_B64:-}" ]; then
             payload=$(echo "$payload" | jq --arg e "$ENV_ENC_B64" '.extra_vars.env_enc_b64 = $e')
           fi
+          
+          # Add FERNET_KEY if provided
+          if [ -n "${FERNET_KEY:-}" ]; then
+            payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '.extra_vars.fernet_key = $fk')
+          fi
+          
 
           # Post the job to AWX
           resp="$(curl -sSf -X POST \
