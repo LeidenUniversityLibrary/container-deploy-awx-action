@@ -81,7 +81,11 @@ jobs:
           
           # Add FERNET_KEY if provided
           if [ -n "${FERNET_KEY:-}" ]; then
+            echo "FERNET_KEY is set"
             payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '.extra_vars.fernet_key = $fk')
+            echo "Fernet key added to payload"
+          else
+            echo "FERNET_KEY is not set"
           fi
           
 
