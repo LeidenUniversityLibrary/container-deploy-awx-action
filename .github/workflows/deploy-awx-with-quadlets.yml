@@ -18,10 +18,7 @@ on:
       quadlets_ref:
         required: false
         type: string
-      awx_secrets_b64:
-        required: false
-        type: string
-      secret_names:
+      env_enc_b64:
         required: false
         type: string
 
@@ -43,8 +40,7 @@ jobs:
           QUADLETS_ARCHIVE_B64: ${{ inputs.quadlets_archive_b64 }}
           QUADLETS_REPO: ${{ inputs.quadlets_repo }}
           QUADLETS_REF: ${{ inputs.quadlets_ref }}
-          AWX_SECRETS_B64: ${{ inputs.awx_secrets_b64 }}
-          SECRET_NAMES: ${{ inputs.secret_names }}
+          ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -77,19 +73,9 @@ jobs:
             payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars.quadlets_ref = $ref')
           fi
 
-          # If AWX_SECRETS_B64 provided, decode and attach as extra_vars.secrets (JSON)
-          if [ -n "${AWX_SECRETS_B64:-}" ]; then
-            secrets_json="$(echo "$AWX_SECRETS_B64" | base64 -d)"
-            if echo "$secrets_json" | jq -e . >/dev/null 2>&1; then
-              payload=$(echo "$payload" | jq --argjson s "$secrets_json" '.extra_vars.secrets = $s')
-            else
-              echo "Warning: AWX_SECRETS_B64 decoded but is not valid JSON; skipping" >&2
-            fi
-          fi
-
-          # If SECRET_NAMES provided, also attach as a CSV or list
-          if [ -n "${SECRET_NAMES:-}" ]; then
-            payload=$(echo "$payload" | jq --arg sn "$SECRET_NAMES" '.extra_vars.secret_names = $sn')
+          # If ENV_ENC_B64 provided, decode and attach as extra_vars.env_enc_b64
+          if [ -n "${ENV_ENC_B64:-}" ]; then
+            payload=$(echo "$payload" | jq --arg e "$ENV_ENC_B64" '.extra_vars.env_enc_b64 = $e')
           fi
 
           # Post the job to AWX
