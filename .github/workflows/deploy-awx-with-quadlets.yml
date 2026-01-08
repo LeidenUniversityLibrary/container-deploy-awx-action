@@ -136,22 +136,22 @@ jobs:
           )
           
           if [ -n "${QUADLETS_ARCHIVE_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg q "$QUADLETS_ARCHIVE_B64" '. extra_vars.quadlets_archive_b64 = $q')
+            payload=$(echo "$payload" | jq --arg q "$QUADLETS_ARCHIVE_B64" '.extra_vars.quadlets_archive_b64 = $q')
           fi
           if [ -n "${QUADLETS_REPO:-}" ]; then
-            payload=$(echo "$payload" | jq --arg r "$QUADLETS_REPO" '.extra_vars. quadlets_repo = $r')
+            payload=$(echo "$payload" | jq --arg r "$QUADLETS_REPO" '.extra_vars.quadlets_repo = $r')
           fi
           if [ -n "${QUADLETS_REF:-}" ]; then
-            payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars. quadlets_ref = $ref')
+            payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars.quadlets_ref = $ref')
           fi
           
           if [ -n "${ENV_DEC_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '. extra_vars.env_dec_b64 = $e')
+            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '.extra_vars.env_dec_b64 = $e')
           fi
           
           if [ -n "${FERNET_KEY:-}" ]; then
             echo "FERNET_KEY is set"
-            payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '. extra_vars.fernet_key = $fk')
+            payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '.extra_vars.fernet_key = $fk')
             echo "Fernet key added to payload"
           else
             echo "FERNET_KEY is not set"
