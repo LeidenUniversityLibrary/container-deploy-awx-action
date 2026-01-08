@@ -193,7 +193,7 @@ jobs:
           
           echo "----- AWX job ${JOB_ID} output -----"
           curl -sS -H "Authorization:  Bearer ${AWX_TOKEN}" \
-            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/? format=txt"
+            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
           
           if [[ "$status" != "successful" ]]; then
             echo "AWX job ended with status:  $status" >&2
