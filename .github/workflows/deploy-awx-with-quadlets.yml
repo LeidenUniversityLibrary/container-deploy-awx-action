@@ -11,12 +11,12 @@ on:
         type: string
       quadlets_archive_b64:
         required: false
-        type:  string
+        type: string
       quadlets_repo:
         required: false
         type: string
       quadlets_ref:
-        required: false
+        required:  false
         type: string
       env_enc_b64:
         required:  false
@@ -28,7 +28,12 @@ jobs:
       - oas-github-runner
 
     steps:
-      - name:  Decrypt .env.enc to . env.dec
+      - name:  Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name:   Decrypt .env.enc to . env.dec
         id: decrypt_env
         env:
           FERNET_KEY: ${{ secrets.FERNET_KEY }}
@@ -40,16 +45,18 @@ jobs:
           if [ -n "${ENV_ENC_B64:-}" ]; then
             echo "Decrypting .env.enc..."
             echo "$ENV_ENC_B64" | base64 -d > .env.enc
-            pip3 install cryptography
+          
+            # Install cryptography
+            pip install cryptography
           
             python3 << 'EOF'
           from cryptography.fernet import Fernet
           import os
           
-          fernet_key = os.environ['FERNET_KEY']
+          fernet_key = os. environ['FERNET_KEY']
           cipher = Fernet(fernet_key.encode())
           
-          with open('.env.enc', 'rb') as f:
+          with open('.env. enc', 'rb') as f:
             encrypted_data = f.read()
           
           decrypted = cipher.decrypt(encrypted_data)
@@ -60,7 +67,7 @@ jobs:
           print("✓ Successfully decrypted .env. enc to .env.dec")
           EOF
           
-            base64 -w0 . env.dec > env_dec. b64
+            base64 -w0 .env. dec > env_dec. b64
             echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
           else
             echo "No encrypted env file provided, skipping decryption"
@@ -147,7 +154,7 @@ jobs:
           set -euo pipefail
           AWX_URL="${AWX_JOB_URL%%/api/*}"
           echo "Waiting for AWX job ${JOB_ID} ..."
-          while : ; do
+          while :  ; do
             status="$(curl -sS -H "Authorization:  Bearer ${AWX_TOKEN}" \
               "${AWX_URL}/api/v2/jobs/${JOB_ID}/" | jq -r '.status')"
             echo "Status: ${status}"
