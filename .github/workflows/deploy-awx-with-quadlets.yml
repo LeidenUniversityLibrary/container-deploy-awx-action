@@ -58,14 +58,14 @@ jobs:
             f.write(decrypted)
 
           print("✓ Successfully decrypted .env.enc to .env.dec")
-      EOF
-      
-      base64 -w0 .env.dec > env_dec.b64
-      echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
-      else
-      echo "No encrypted env file provided, skipping decryption"
-      echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
-      fi
+          EOF
+          
+          base64 -w0 .env.dec > env_dec.b64
+          echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
+          else
+          echo "No encrypted env file provided, skipping decryption"
+          echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
+          fi
       - name: Launch AWX job
         id: launch
         env:
