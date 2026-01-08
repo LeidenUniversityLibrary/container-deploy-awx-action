@@ -40,7 +40,7 @@ jobs:
           QUADLETS_ARCHIVE_B64: ${{ inputs.quadlets_archive_b64 }}
           QUADLETS_REPO: ${{ inputs.quadlets_repo }}
           QUADLETS_REF: ${{ inputs.quadlets_ref }}
-          ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
+          ENV_DEC_B64: ${{ steps.decrypt_env.outputs.env_dec_b64 }}
           FERNET_KEY: ${{ secrets.FERNET_KEY  }}
         shell: bash
         run: |
@@ -74,9 +74,9 @@ jobs:
             payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars.quadlets_ref = $ref')
           fi
 
-          # If ENV_ENC_B64 provided, decode and attach as extra_vars.env_enc_b64
-          if [ -n "${ENV_ENC_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg e "$ENV_ENC_B64" '.extra_vars.env_enc_b64 = $e')
+          # If $ENV_DEC_B64 provided, decode and attach as extra_vars.env_dec_b64
+          if [ -n "${ENV_DEC_B64:-}" ]; then
+            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '.extra_vars.env_dec_b64 = $e')
           fi
           
           # Add FERNET_KEY if provided
@@ -104,6 +104,49 @@ jobs:
           fi
           echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
 
+      - name: Decrypt .env.enc to .env.dec
+        id: decrypt_env
+        env:
+          FERNET_KEY: ${{ secrets.FERNET_KEY }}
+          ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
+        run: |
+          set -euo pipefail
+          
+          if [ -n "${ENV_ENC_B64:-}" ]; then
+            echo "Decrypting .env.enc..."
+          
+            # Decode base64 to get encrypted file
+            echo "$ENV_ENC_B64" | base64 -d > .env.enc
+          
+            # Install cryptography
+            pip install cryptography
+          
+            # Decrypt using Python
+            python3 << 'EOF'
+            from cryptography.fernet import Fernet
+            import os
+          
+            fernet_key = os.environ['FERNET_KEY']
+            cipher = Fernet(fernet_key.encode())
+          
+            with open('.env.enc', 'rb') as f:
+                encrypted_data = f.read()
+          
+            decrypted = cipher.decrypt(encrypted_data)
+          
+            with open('.env.dec', 'wb') as f:
+                f.write(decrypted)
+          
+            print("✓ Successfully decrypted .env.enc to .env.dec")
+            EOF
+          
+            # Encode decrypted file to base64
+            base64 -w0 .env.dec > env_dec.b64
+            echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
+          else
+            echo "No encrypted env file provided, skipping decryption"
+            echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
+          fi
       - name: Wait for AWX & stream logs
         env:
           AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
