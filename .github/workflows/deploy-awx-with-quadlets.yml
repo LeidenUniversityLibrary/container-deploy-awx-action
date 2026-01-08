@@ -16,7 +16,7 @@ on:
         required: false
         type: string
       quadlets_ref:
-        required:  false
+        required:   false
         type: string
       env_enc_b64:
         required:  false
@@ -28,17 +28,17 @@ jobs:
       - oas-github-runner
 
     steps:
-      - name:  Setup Python
+      - name:   Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name:   Decrypt .env.enc to . env.dec
+      - name:   Decrypt .env.enc to . env. dec
         id: decrypt_env
         env:
-          FERNET_KEY: ${{ secrets.FERNET_KEY }}
+          FERNET_KEY: ${{ secrets. FERNET_KEY }}
           ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
-        shell: bash
+        shell:  bash
         run: |
           set -euo pipefail
           
@@ -50,24 +50,48 @@ jobs:
             pip install cryptography
           
             python3 << 'EOF'
-          from cryptography.fernet import Fernet
+          from cryptography.fernet import Fernet, InvalidToken
           import os
+          import sys
           
-          fernet_key = os. environ['FERNET_KEY']
-          cipher = Fernet(fernet_key.encode())
+          try:
+            fernet_key = os.environ['FERNET_KEY']
           
-          with open('.env.enc', 'rb') as f:
-            encrypted_data = f.read()
+            # Validate the key format
+            if not fernet_key: 
+              print("ERROR: FERNET_KEY is empty", file=sys.stderr)
+              sys.exit(1)
           
-          decrypted = cipher.decrypt(encrypted_data)
+            # Check key length (Fernet keys should be 44 bytes base64 encoded = 32 bytes raw)
+            print(f"Fernet key length: {len(fernet_key)} characters")
           
-          with open('.env.dec', 'wb') as f:
-            f.write(decrypted)
+            cipher = Fernet(fernet_key.encode())
           
-          print("✓ Successfully decrypted .env.enc to .env.dec")
+            with open('.env.enc', 'rb') as f:
+              encrypted_data = f.read()
+          
+            print(f"Encrypted data size: {len(encrypted_data)} bytes")
+          
+            # Attempt decryption
+            decrypted = cipher.decrypt(encrypted_data)
+          
+            with open('.env.dec', 'wb') as f:
+              f.write(decrypted)
+          
+            print("✓ Successfully decrypted .env.enc to .env.dec")
+          
+          except InvalidToken: 
+            print("ERROR: Invalid Fernet token.  Possible causes:", file=sys.stderr)
+            print("  1. Wrong FERNET_KEY (doesn't match the key used for encryption)", file=sys.stderr)
+            print("  2. Corrupted encrypted data", file=sys.stderr)
+            print("  3. Data was not encrypted with Fernet", file=sys.stderr)
+            sys.exit(1)
+          except Exception as e:
+            print(f"ERROR: Unexpected error during decryption: {e}", file=sys.stderr)
+            sys.exit(1)
           EOF
           
-            base64 -w0 .env. dec > env_dec. b64
+            base64 -w0 .env.dec > env_dec. b64
             echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
           else
             echo "No encrypted env file provided, skipping decryption"
@@ -103,28 +127,28 @@ jobs:
                 image: $image,
                 image_tag: $image_tag,
                 registry_token: $registry_token,
-                registry_user:  $registry_user
+                registry_user:   $registry_user
               }
             }'
           )
           
           if [ -n "${QUADLETS_ARCHIVE_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg q "$QUADLETS_ARCHIVE_B64" '.extra_vars.quadlets_archive_b64 = $q')
+            payload=$(echo "$payload" | jq --arg q "$QUADLETS_ARCHIVE_B64" '. extra_vars.quadlets_archive_b64 = $q')
           fi
           if [ -n "${QUADLETS_REPO:-}" ]; then
-            payload=$(echo "$payload" | jq --arg r "$QUADLETS_REPO" '.extra_vars.quadlets_repo = $r')
+            payload=$(echo "$payload" | jq --arg r "$QUADLETS_REPO" '.extra_vars. quadlets_repo = $r')
           fi
           if [ -n "${QUADLETS_REF:-}" ]; then
-            payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars.quadlets_ref = $ref')
+            payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars. quadlets_ref = $ref')
           fi
           
           if [ -n "${ENV_DEC_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '.extra_vars.env_dec_b64 = $e')
+            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '. extra_vars.env_dec_b64 = $e')
           fi
           
           if [ -n "${FERNET_KEY:-}" ]; then
             echo "FERNET_KEY is set"
-            payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '.extra_vars.fernet_key = $fk')
+            payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '. extra_vars.fernet_key = $fk')
             echo "Fernet key added to payload"
           else
             echo "FERNET_KEY is not set"
@@ -157,7 +181,7 @@ jobs:
           while :  ; do
             status="$(curl -sS -H "Authorization:  Bearer ${AWX_TOKEN}" \
               "${AWX_URL}/api/v2/jobs/${JOB_ID}/" | jq -r '.status')"
-            echo "Status: ${status}"
+            echo "Status:  ${status}"
             case "$status" in
               successful|failed|error|canceled) break ;;
             esac
