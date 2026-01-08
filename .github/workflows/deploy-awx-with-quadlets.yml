@@ -56,7 +56,7 @@ jobs:
           fernet_key = os. environ['FERNET_KEY']
           cipher = Fernet(fernet_key.encode())
           
-          with open('.env. enc', 'rb') as f:
+          with open('.env.enc', 'rb') as f:
             encrypted_data = f.read()
           
           decrypted = cipher.decrypt(encrypted_data)
@@ -64,7 +64,7 @@ jobs:
           with open('.env.dec', 'wb') as f:
             f.write(decrypted)
           
-          print("✓ Successfully decrypted .env. enc to .env.dec")
+          print("✓ Successfully decrypted .env.enc to .env.dec")
           EOF
           
             base64 -w0 .env. dec > env_dec. b64
