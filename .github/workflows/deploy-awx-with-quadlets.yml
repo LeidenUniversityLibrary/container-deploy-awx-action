@@ -29,43 +29,44 @@ jobs:
 
     steps:
       - name: Decrypt .env.enc to .env.dec
-        id: decrypt_env
-        env:
-          FERNET_KEY: ${{ secrets.FERNET_KEY }}
-          ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ -n "${ENV_ENC_B64:-}" ]; then
-            echo "Decrypting .env.enc..."
-            echo "$ENV_ENC_B64" | base64 -d > .env.enc
-            pip3 install cryptography
-
-            python3 << 'EOF'
-            from cryptography.fernet import Fernet
-            import os
-      
-            fernet_key = os.environ['FERNET_KEY']
-            cipher = Fernet(fernet_key.encode())
-      
-            with open('.env.enc', 'rb') as f:
-              encrypted_data = f.read()
-      
-            decrypted = cipher.decrypt(encrypted_data)
-      
-            with open('.env.dec', 'wb') as f:
-              f.write(decrypted)
-      
-            print("✓ Successfully decrypted .env.enc to .env.dec")
-            EOF
+          id: decrypt_env
+          env:
+            FERNET_KEY: ${{ secrets.FERNET_KEY }}
+            ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
+          shell: bash
+          run: |
+            set -euo pipefail
             
-            base64 -w0 .env.dec > env_dec.b64
-            echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
-            else
-            echo "No encrypted env file provided, skipping decryption"
-            echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
-            fi
+            if [ -n "${ENV_ENC_B64:-}" ]; then
+              echo "Decrypting .env.enc..."
+              echo "$ENV_ENC_B64" | base64 -d > .env.enc
+              pip3 install cryptography
+            
+              python3 << 'EOF'
+      from cryptography.fernet import Fernet
+      import os
+
+      fernet_key = os.environ['FERNET_KEY']
+      cipher = Fernet(fernet_key.encode())
+
+      with open('.env.enc', 'rb') as f:
+        encrypted_data = f.read()
+
+      decrypted = cipher.decrypt(encrypted_data)
+
+      with open('.env.dec', 'wb') as f:
+        f.write(decrypted)
+
+      print("✓ Successfully decrypted .env.enc to .env.dec")
+      EOF
+      
+      base64 -w0 .env.dec > env_dec.b64
+      echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
+      else
+      echo "No encrypted env file provided, skipping decryption"
+      echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
+      fi
+
       - name: Launch AWX job
         id: launch
         env:
@@ -79,13 +80,12 @@ jobs:
           QUADLETS_REPO: ${{ inputs.quadlets_repo }}
           QUADLETS_REF: ${{ inputs.quadlets_ref }}
           ENV_DEC_B64: ${{ steps.decrypt_env.outputs.env_dec_b64 }}
-          FERNET_KEY: ${{ secrets.FERNET_KEY  }}
+          FERNET_KEY: ${{ secrets.FERNET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
           echo "Launching AWX deploy job (quadlets + secrets)"
-
-          # Build base extra_vars JSON
+          
           payload=$(jq -nc \
             --arg image "$IMAGE" \
             --arg image_tag "$IMAGE_TAG" \
@@ -100,8 +100,7 @@ jobs:
               }
             }'
           )
-
-          # Add quadlets payload if provided
+          
           if [ -n "${QUADLETS_ARCHIVE_B64:-}" ]; then
             payload=$(echo "$payload" | jq --arg q "$QUADLETS_ARCHIVE_B64" '.extra_vars.quadlets_archive_b64 = $q')
           fi
@@ -111,13 +110,11 @@ jobs:
           if [ -n "${QUADLETS_REF:-}" ]; then
             payload=$(echo "$payload" | jq --arg ref "$QUADLETS_REF" '.extra_vars.quadlets_ref = $ref')
           fi
-
-          # If $ENV_DEC_B64 provided, decode and attach as extra_vars.env_dec_b64
+          
           if [ -n "${ENV_DEC_B64:-}" ]; then
             payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '.extra_vars.env_dec_b64 = $e')
           fi
           
-          # Add FERNET_KEY if provided
           if [ -n "${FERNET_KEY:-}" ]; then
             echo "FERNET_KEY is set"
             payload=$(echo "$payload" | jq --arg fk "$FERNET_KEY" '.extra_vars.fernet_key = $fk')
@@ -126,14 +123,12 @@ jobs:
             echo "FERNET_KEY is not set"
           fi
           
-
-          # Post the job to AWX
           resp="$(curl -sSf -X POST \
             -H "Authorization: Bearer ${AWX_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "${payload}" \
             "${AWX_JOB_URL}")"
-
+          
           echo "$resp"
           job_id="$(echo "$resp" | jq -r '.job')"
           if [[ -z "$job_id" || "$job_id" == "null" ]]; then
@@ -161,11 +156,11 @@ jobs:
             esac
             sleep 10
           done
-
+          
           echo "----- AWX job ${JOB_ID} output -----"
           curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
             "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
-
+          
           if [[ "$status" != "successful" ]]; then
             echo "AWX job ended with status: $status" >&2
             exit 1
