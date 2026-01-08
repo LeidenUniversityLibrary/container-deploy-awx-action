@@ -11,15 +11,15 @@ on:
         type: string
       quadlets_archive_b64:
         required: false
-        type: string
+        type:  string
       quadlets_repo:
         required: false
         type: string
       quadlets_ref:
-        required:   false
+        required:    false
         type: string
       env_enc_b64:
-        required:  false
+        required:   false
         type: string
 
 jobs:
@@ -28,77 +28,80 @@ jobs:
       - oas-github-runner
 
     steps:
-      - name:   Setup Python
+      - name:    Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name:   Decrypt .env.enc to . env. dec
+      - name:   Decrypt . env. enc to .env. dec
         id: decrypt_env
         env:
-          FERNET_KEY: ${{ secrets. FERNET_KEY }}
+          FERNET_KEY: ${{ secrets.FERNET_KEY }}
           ENV_ENC_B64: ${{ inputs.env_enc_b64 }}
-        shell:  bash
+        shell: bash
         run: |
           set -euo pipefail
           
           if [ -n "${ENV_ENC_B64:-}" ]; then
-            echo "Decrypting .env.enc..."
-            echo "$ENV_ENC_B64" | base64 -d > .env.enc
+            echo "Decrypting . env.enc..."
           
             # Install cryptography
             pip install cryptography
           
+            # Pass the base64 string directly to Python (don't decode it in bash)
             python3 << 'EOF'
           from cryptography.fernet import Fernet, InvalidToken
           import os
           import sys
+          import base64
           
-          try:
+          try: 
             fernet_key = os.environ['FERNET_KEY']
+            env_enc_b64 = os.environ['ENV_ENC_B64']
           
-            # Validate the key format
             if not fernet_key: 
               print("ERROR: FERNET_KEY is empty", file=sys.stderr)
               sys.exit(1)
           
-            # Check key length (Fernet keys should be 44 bytes base64 encoded = 32 bytes raw)
             print(f"Fernet key length: {len(fernet_key)} characters")
           
-            cipher = Fernet(fernet_key.encode())
+            cipher = Fernet(fernet_key. encode())
           
-            with open('.env.enc', 'rb') as f:
-              encrypted_data = f.read()
+            # Your encryption script does base64.b64encode(fernet_token)
+            # So we need to decode that first to get the actual Fernet token
+            encrypted_data_b64 = base64.b64decode(env_enc_b64)  # First decode:  workflow input
+            fernet_token = base64.b64decode(encrypted_data_b64)  # Second decode: your script's encoding
           
-            print(f"Encrypted data size: {len(encrypted_data)} bytes")
+            print(f"Fernet token size: {len(fernet_token)} bytes")
+            print(f"First byte: 0x{fernet_token[0]:02x}")
           
-            # Attempt decryption
-            decrypted = cipher.decrypt(encrypted_data)
+            # Now decrypt the actual Fernet token
+            decrypted = cipher.decrypt(fernet_token)
           
             with open('.env.dec', 'wb') as f:
               f.write(decrypted)
           
             print("✓ Successfully decrypted .env.enc to .env.dec")
+            print(f"Decrypted data size: {len(decrypted)} bytes")
           
           except InvalidToken: 
-            print("ERROR: Invalid Fernet token.  Possible causes:", file=sys.stderr)
-            print("  1. Wrong FERNET_KEY (doesn't match the key used for encryption)", file=sys.stderr)
-            print("  2. Corrupted encrypted data", file=sys.stderr)
-            print("  3. Data was not encrypted with Fernet", file=sys.stderr)
+            print("ERROR: Invalid Fernet token.  Wrong FERNET_KEY?", file=sys.stderr)
             sys.exit(1)
           except Exception as e:
-            print(f"ERROR: Unexpected error during decryption: {e}", file=sys.stderr)
+            print(f"ERROR: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             sys.exit(1)
           EOF
           
-            base64 -w0 .env.dec > env_dec. b64
+            base64 -w0 .env.dec > env_dec.b64
             echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
           else
             echo "No encrypted env file provided, skipping decryption"
             echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Launch AWX job
+      - name:  Launch AWX job
         id: launch
         env:
           AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
@@ -107,9 +110,9 @@ jobs:
           IMAGE_TAG: ${{ inputs.image_tag }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
-          QUADLETS_ARCHIVE_B64: ${{ inputs. quadlets_archive_b64 }}
-          QUADLETS_REPO: ${{ inputs.quadlets_repo }}
-          QUADLETS_REF: ${{ inputs. quadlets_ref }}
+          QUADLETS_ARCHIVE_B64: ${{ inputs.quadlets_archive_b64 }}
+          QUADLETS_REPO:  ${{ inputs.quadlets_repo }}
+          QUADLETS_REF: ${{ inputs.quadlets_ref }}
           ENV_DEC_B64: ${{ steps.decrypt_env.outputs.env_dec_b64 }}
           FERNET_KEY: ${{ secrets.FERNET_KEY }}
         shell: bash
@@ -127,7 +130,7 @@ jobs:
                 image: $image,
                 image_tag: $image_tag,
                 registry_token: $registry_token,
-                registry_user:   $registry_user
+                registry_user: $registry_user
               }
             }'
           )
@@ -143,7 +146,7 @@ jobs:
           fi
           
           if [ -n "${ENV_DEC_B64:-}" ]; then
-            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '. extra_vars.env_dec_b64 = $e')
+            payload=$(echo "$payload" | jq --arg e "$ENV_DEC_B64" '.extra_vars.env_dec_b64 = $e')
           fi
           
           if [ -n "${FERNET_KEY:-}" ]; then
@@ -170,18 +173,18 @@ jobs:
 
       - name: Wait for AWX & stream logs
         env:
-          AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
+          AWX_JOB_URL: ${{ secrets. AWX_JOB_URL }}
           JOB_ID: ${{ steps.launch.outputs.job_id }}
-          AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
+          AWX_TOKEN: ${{ secrets. AWX_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           AWX_URL="${AWX_JOB_URL%%/api/*}"
           echo "Waiting for AWX job ${JOB_ID} ..."
           while :  ; do
-            status="$(curl -sS -H "Authorization:  Bearer ${AWX_TOKEN}" \
+            status="$(curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
               "${AWX_URL}/api/v2/jobs/${JOB_ID}/" | jq -r '.status')"
-            echo "Status:  ${status}"
+            echo "Status: ${status}"
             case "$status" in
               successful|failed|error|canceled) break ;;
             esac
@@ -190,7 +193,7 @@ jobs:
           
           echo "----- AWX job ${JOB_ID} output -----"
           curl -sS -H "Authorization:  Bearer ${AWX_TOKEN}" \
-            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
+            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/? format=txt"
           
           if [[ "$status" != "successful" ]]; then
             echo "AWX job ended with status: $status" >&2
