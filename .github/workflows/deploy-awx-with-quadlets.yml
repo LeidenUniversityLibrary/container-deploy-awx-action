@@ -40,32 +40,32 @@ jobs:
           if [ -n "${ENV_ENC_B64:-}" ]; then
             echo "Decrypting .env.enc..."
             echo "$ENV_ENC_B64" | base64 -d > .env.enc
-            pip install cryptography
+            pip3 install cryptography
 
             python3 << 'EOF'
-          from cryptography.fernet import Fernet
-          import os
-
-          fernet_key = os.environ['FERNET_KEY']
-          cipher = Fernet(fernet_key.encode())
-
-          with open('.env.enc', 'rb') as f:
-            encrypted_data = f.read()
-
-          decrypted = cipher.decrypt(encrypted_data)
-
-          with open('.env.dec', 'wb') as f:
-            f.write(decrypted)
-
-          print("✓ Successfully decrypted .env.enc to .env.dec")
-          EOF
-          
-          base64 -w0 .env.dec > env_dec.b64
-          echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
-          else
-          echo "No encrypted env file provided, skipping decryption"
-          echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
-          fi
+            from cryptography.fernet import Fernet
+            import os
+      
+            fernet_key = os.environ['FERNET_KEY']
+            cipher = Fernet(fernet_key.encode())
+      
+            with open('.env.enc', 'rb') as f:
+              encrypted_data = f.read()
+      
+            decrypted = cipher.decrypt(encrypted_data)
+      
+            with open('.env.dec', 'wb') as f:
+              f.write(decrypted)
+      
+            print("✓ Successfully decrypted .env.enc to .env.dec")
+            EOF
+            
+            base64 -w0 .env.dec > env_dec.b64
+            echo "env_dec_b64=$(cat env_dec.b64)" >> "$GITHUB_OUTPUT"
+            else
+            echo "No encrypted env file provided, skipping decryption"
+            echo "env_dec_b64=" >> "$GITHUB_OUTPUT"
+            fi
       - name: Launch AWX job
         id: launch
         env:
