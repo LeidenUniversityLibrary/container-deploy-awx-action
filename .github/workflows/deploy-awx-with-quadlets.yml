@@ -108,8 +108,6 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_TOKEN: ${{ github.token }}
           QUADLETS_ARCHIVE_B64: ${{ inputs.quadlets_archive_b64 }}
           QUADLETS_REPO:  ${{ inputs.quadlets_repo }}
           QUADLETS_REF: ${{ inputs.quadlets_ref }}
@@ -123,14 +121,10 @@ jobs:
           payload=$(jq -nc \
             --arg image "$IMAGE" \
             --arg image_tag "$IMAGE_TAG" \
-            --arg registry_token "$REGISTRY_TOKEN" \
-            --arg registry_user "$REGISTRY_USER" \
             '{
               extra_vars: {
                 image: $image,
                 image_tag:  $image_tag,
-                registry_token: $registry_token,
-                registry_user: $registry_user
               }
             }'
           )
