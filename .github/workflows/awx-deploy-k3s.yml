@@ -39,6 +39,7 @@ jobs:
 
           # Read docker-compose.yml content
           COMPOSE_CONTENT=$(cat docker-compose.yml)
+
           # TODO: Change before merge
           AWX_JOB_URL='https://awx-oasible.leidenuniv.nl/api/v2/job_templates/57/launch/'
 
@@ -73,6 +74,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # TODO: Change before merge
+          AWX_JOB_URL='https://awx-oasible.leidenuniv.nl/api/v2/job_templates/57/launch/'
+
           AWX_URL="${AWX_JOB_URL%%/api/*}"
           echo "Waiting for AWX job ${JOB_ID} ..."
           while :; do
