@@ -48,8 +48,8 @@ jobs:
             --arg image_tag "$IMAGE_TAG" \
             --arg registry_token "$REGISTRY_TOKEN" \
             --arg registry_user "$REGISTRY_USER" \
-            --arg compose "$COMPOSE_CONTENT" \
-            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose:$compose}}')
+            --arg compose_content "$COMPOSE_CONTENT" \
+            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose_content:$compose_content}}')
 
           resp="$(curl -sSf -X POST \
             -H "Authorization: Bearer ${AWX_TOKEN}" \
