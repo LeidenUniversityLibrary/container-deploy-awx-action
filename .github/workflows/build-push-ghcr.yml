@@ -10,6 +10,11 @@ on:
         type: string
         default: ${{ github.repository }}
 
+      image_tag:
+        description: Image tag (defaults to branch name)
+        required: false
+        type: string
+      
       production_branch:
         description: Branch for which 'latest' tag will be added
         required: false
@@ -72,8 +77,15 @@ jobs:
           IMAGE="ghcr.io/${{ inputs.image_name }}"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
 
-          # branch tag: lowercase, replace slashes with dashes
-          BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
+
+          # branch name fallback if inputs.tag is empty
+          RAW_TAG="${{ inputs.image_tag }}"
+          if [ -z "$RAW_TAG" ]; then
+            RAW_TAG="${GITHUB_REF_NAME}"
+          fi
+
+          # normalise tag
+          BRANCH_TAG="$(echo "$RAW_TAG" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
           SHA_TAG="${GITHUB_SHA::7}"
 
           # Always tag with branch and short SHA
