@@ -50,8 +50,8 @@ jobs:
             --arg registry_token "$REGISTRY_TOKEN" \
             --arg registry_user "$REGISTRY_USER" \
             --arg compose_content "$COMPOSE_CONTENT" \
-            --arg env_enc "$ENV_ENC" \
-            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose_content:$compose_content,env_enc:$env_enc}}')
+            --arg env_enc_content "$ENV_ENC" \
+            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose_content:$compose_content,env_enc_content:$env_enc_content}}')
 
           resp="$(curl -sSf -X POST \
             -H "Authorization: Bearer ${AWX_TOKEN}" \
