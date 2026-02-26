@@ -1,0 +1,93 @@
+name: Deploy container using AWX (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "Fully-qualified image name, e.g. ghcr.io/org/app"
+        required: true
+        type: string
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+        type: string
+
+jobs:
+  deploy-awx-docker-compose:
+    runs-on:
+      - oas-github-runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Launch AWX job
+        id: launch
+        env:
+          AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
+          AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
+          IMAGE: ${{ inputs.image }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          REGISTRY_USER: ${{ github.actor }}
+          # In called workflows you get a scoped token as github.token
+          REGISTRY_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Launching AWX deploy job"
+
+          # Read docker-compose.yml content
+          COMPOSE_CONTENT=$(cat docker-compose.yml)
+
+          payload=$(jq -nc \
+            --arg image "$IMAGE" \
+            --arg image_tag "$IMAGE_TAG" \
+            --arg registry_token "$REGISTRY_TOKEN" \
+            --arg registry_user "$REGISTRY_USER" \
+            --arg compose "$COMPOSE_CONTENT" \
+            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose:$compose}}')
+
+          resp="$(curl -sSf -X POST \
+            -H "Authorization: Bearer ${AWX_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "${payload}" \
+            "${AWX_JOB_URL}")"
+          
+          
+          echo "$resp"
+          job_id="$(echo "$resp" | jq -r '.job')"
+          if [[ -z "$job_id" || "$job_id" == "null" ]]; then
+            echo "Failed to parse job id from AWX response" >&2
+            exit 1
+          fi
+          echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for AWX & stream logs
+        env:
+          AWX_JOB_URL: ${{ secrets.AWX_JOB_URL }}
+          JOB_ID: ${{ steps.launch.outputs.job_id }}
+          AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          AWX_URL="${AWX_JOB_URL%%/api/*}"
+          echo "Waiting for AWX job ${JOB_ID} ..."
+          while :; do
+            status="$(curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
+              "${AWX_URL}/api/v2/jobs/${JOB_ID}/" | jq -r '.status')"
+            echo "Status: ${status}"
+            case "$status" in
+              successful|failed|error|canceled) break ;;
+            esac
+            sleep 10
+          done
+
+          echo "----- AWX job ${JOB_ID} output -----"
+          curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
+            "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
+
+          if [[ "$status" != "successful" ]]; then
+            echo "AWX job ended with status: $status" >&2
+            exit 1
+          fi
