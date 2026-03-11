@@ -11,11 +11,10 @@ on:
         description: "Image tag to deploy"
         required: true
         type: string
-      env_file_content:
+    secrets:
+      ENV_FILE_CONTENT:
         description: "Optional full .env file contents"
         required: false
-        type: string
-        default: ""
 jobs:
   deploy-awx:
     runs-on:
@@ -29,7 +28,7 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ENV_FILE_CONTENT: ${{ inputs.env_file_content }}
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
@@ -59,12 +58,12 @@ jobs:
             -H "Content-Type: application/json" \
             -d "${payload}" \
             "${AWX_JOB_URL}")"
-          echo "$resp"
           job_id="$(echo "$resp" | jq -r '.job')"
           if [[ -z "$job_id" || "$job_id" == "null" ]]; then
             echo "Failed to parse job id from AWX response" >&2
             exit 1
           fi
+          echo "AWX job launched: ${job_id}"
           echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
 
       - name: Wait for AWX & stream logs
