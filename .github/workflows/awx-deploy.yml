@@ -11,7 +11,10 @@ on:
         description: "Image tag to deploy"
         required: true
         type: string
-
+    secrets:
+      ENV_FILE_CONTENT:
+        description: "Optional full .env file contents"
+        required: false
 jobs:
   deploy-awx:
     runs-on:
@@ -25,8 +28,8 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
           REGISTRY_USER: ${{ github.actor }}
-          # In called workflows you get a scoped token as github.token
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -39,21 +42,28 @@ jobs:
             --arg image_tag "$IMAGE_TAG" \
             --arg registry_token "$REGISTRY_TOKEN" \
             --arg registry_user "$REGISTRY_USER" \
-            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user}}')
+            --arg env_file "$ENV_FILE_CONTENT" \
+            '{
+              extra_vars:{
+                image:$image,
+                image_tag:$image_tag,
+                registry_token:$registry_token,
+                registry_user:$registry_user,
+                env_file_content:$env_file
+              }
+            }')
 
           resp="$(curl -sSf -X POST \
             -H "Authorization: Bearer ${AWX_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "${payload}" \
             "${AWX_JOB_URL}")"
-          
-          
-          echo "$resp"
           job_id="$(echo "$resp" | jq -r '.job')"
           if [[ -z "$job_id" || "$job_id" == "null" ]]; then
             echo "Failed to parse job id from AWX response" >&2
             exit 1
           fi
+          echo "AWX job launched: ${job_id}"
           echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
 
       - name: Wait for AWX & stream logs
@@ -75,7 +85,6 @@ jobs:
             esac
             sleep 10
           done
-
           echo "----- AWX job ${JOB_ID} output -----"
           curl -sS -H "Authorization: Bearer ${AWX_TOKEN}" \
             "${AWX_URL}/api/v2/jobs/${JOB_ID}/stdout/?format=txt"
