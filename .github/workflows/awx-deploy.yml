@@ -28,7 +28,7 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ENV_FILE_CONTENT: ${{ inputs.env_file_name != '' && secrets[inputs.env_file_name] || '' }}
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENTS }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
