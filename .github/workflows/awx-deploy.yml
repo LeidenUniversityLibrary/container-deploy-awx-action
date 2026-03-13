@@ -3,6 +3,10 @@ name: Deploy container using AWX (reusable)
 on:
   workflow_call:
     inputs:
+      environment:
+        description: "GitHub Environment name, e.g. staging or production"
+        required: true
+        type: string
       image:
         description: "Fully-qualified image name, e.g. ghcr.io/org/app"
         required: true
@@ -11,14 +15,12 @@ on:
         description: "Image tag to deploy"
         required: true
         type: string
-    secrets:
-      env_file_content:
-        description: "Optional full .env file contents"
-        required: false
+
 jobs:
   deploy-awx:
     runs-on:
       - oas-github-runner
+    environment: ${{ inputs.environment || '' }}
 
     steps:
       - name: Launch AWX job
@@ -28,7 +30,7 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ENV_FILE_CONTENT: ${{ secrets.env_file_content }}
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENTS }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
