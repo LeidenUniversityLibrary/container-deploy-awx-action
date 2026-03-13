@@ -13,42 +13,10 @@ Repository for reusable GitHub Action to be used to deploy containers onto a giv
 
 ## Requirements
 - Running and connect OAS GitHub runner
-- AWX_JOB_URL and AWX_TOKEN of appropriate AWX job (handed out by OAS) set up as Environment Secrets
+- `AWX_JOB_URL` and `AWX_TOKEN` of the appropriate AWX job (handed out by OAS) configured as repository/organization secrets, or as Environment secrets if you call the deploy workflow with `with: environment: <name>`
 - Valid Docker-/Containerfile
+- `ENV_FILE_CONTENT` configured as a repository/organization secret, or as an Environment secret if you call the deploy workflow with `with: environment: <name>` (if you're planning on using that)
 
-## Example
+## Examples
 
-Example that should work if you copy it to your own workflow (eg. .github/workflow/.build-push-deploy.yml):
-```
-name: Build, Push & Deploy 
-
-on:
-  push:
-    branches: [ staging, production ]
-  workflow_dispatch:
-
-# Needed so GITHUB_TOKEN can publish to GHCR
-permissions:
-  contents: read
-  packages: write
-
-
-jobs:
-  build-push-ghcr:
-    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@main
-    secrets: inherit
-    # with:
-      # image_name: LeidenUniversityLibrary/<reponame> # Name you want this image to be. Will use owner/repository-name by default.
-      # production_branch: main # Which branch do you want to use to push production and get latest tag? "main" by default
-      # context: . # Which dir is the Containerfile? "." by default. 
-      # containerfile: Containerfile # What's the name of the Containerfile? "Containerfile" by default.
-  
-  deploy-awx:
-    needs: build-push-ghcr
-    if: github.ref_name == 'staging'
-    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@main
-    with:
-      image: ${{ needs.build-push-ghcr.outputs.image }}
-      image_tag: ${{ needs.build-push-ghcr.outputs.branch_tag }}
-    secrets: inherit  
-```
+See "examples" folder. These examples should work if you copy one of them to your own workflow file. (eg. .github/workflows/.build-push-deploy.yml):
