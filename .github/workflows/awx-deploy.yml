@@ -5,7 +5,7 @@ on:
     inputs:
       environment:
         description: "GitHub Environment name, e.g. staging or production"
-        required: true
+        required: false
         type: string
       image:
         description: "Fully-qualified image name, e.g. ghcr.io/org/app"
@@ -30,7 +30,7 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ENV_FILE_CONTENT: ${{ secrets.STAGING_ENV_FILE || '' }}
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENTS || '' }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
