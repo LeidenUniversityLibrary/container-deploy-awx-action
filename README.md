@@ -19,4 +19,4 @@ Repository for reusable GitHub Action to be used to deploy containers onto a giv
 
 ## Examples
 
-See "examples" folder. These examples should work if you copy one of them to your own workflow file. (eg. .github/workflow/.build-push-deploy.yml):
+See "examples" folder. These examples should work if you copy one of them to your own workflow file. (eg. .github/workflows/.build-push-deploy.yml):
