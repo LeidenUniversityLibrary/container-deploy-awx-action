@@ -13,9 +13,9 @@ Repository for reusable GitHub Action to be used to deploy containers onto a giv
 
 ## Requirements
 - Running and connect OAS GitHub runner
-- AWX_JOB_URL and AWX_TOKEN of appropriate AWX job (handed out by OAS) set up as Environment Secrets
+- `AWX_JOB_URL` and `AWX_TOKEN` of the appropriate AWX job (handed out by OAS) configured as repository/organization secrets, or as Environment secrets if you call the deploy workflow with `with: environment: <name>`
 - Valid Docker-/Containerfile
-- ENV_FILE_CONTENT set up as an Environment Secret (if you're planning on using that)
+- `ENV_FILE_CONTENT` configured as a repository/organization secret, or as an Environment secret if you call the deploy workflow with `with: environment: <name>` (if you're planning on using that)
 
 ## Examples
 
