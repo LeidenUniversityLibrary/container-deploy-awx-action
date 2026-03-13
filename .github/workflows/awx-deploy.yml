@@ -11,10 +11,10 @@ on:
         description: "Image tag to deploy"
         required: true
         type: string
-    secrets:
-      ENV_FILE_CONTENT:
-        description: "Optional full .env file contents"
+      env_file_name:
+        description: "Name of the github secret containing the .env file content (optional)"
         required: false
+        type: string
 jobs:
   deploy-awx:
     runs-on:
@@ -28,7 +28,6 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
