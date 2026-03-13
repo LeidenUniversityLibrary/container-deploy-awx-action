@@ -1,4 +1,4 @@
-name: Build, Push & Deploy 
+name: Build, Push & Deploy
 
 on:
   push:
@@ -18,9 +18,9 @@ jobs:
     # with:
       # image_name: LeidenUniversityLibrary/<reponame> # Name you want this image to be. Will use owner/repository-name by default.
       # production_branch: main # Which branch do you want to use to push production and get latest tag? "main" by default
-      # context: . # Which dir is the Containerfile? "." by default. 
+      # context: . # Which dir is the Containerfile? "." by default.
       # containerfile: Containerfile # What's the name of the Containerfile? "Containerfile" by default.
-  
+
   deploy-awx:
     needs: build-push-ghcr
     if: github.ref_name == 'staging'
@@ -28,4 +28,4 @@ jobs:
     with:
       image: ${{ needs.build-push-ghcr.outputs.image }}
       image_tag: ${{ needs.build-push-ghcr.outputs.branch_tag }}
-    secrets: inherit  
+    secrets: inherit
