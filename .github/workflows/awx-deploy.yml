@@ -28,6 +28,7 @@ jobs:
           AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          ENV_FILE_CONTENT: ${{ inputs.env_file_name != '' && secrets[inputs.env_file_name] || '' }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
@@ -41,7 +42,7 @@ jobs:
             --arg image_tag "$IMAGE_TAG" \
             --arg registry_token "$REGISTRY_TOKEN" \
             --arg registry_user "$REGISTRY_USER" \
-            --arg env_file "$ENV_FILE_CONTENT" \
+            --arg env_file "${ENV_FILE_CONTENT:-}" \
             '{
               extra_vars:{
                 image:$image,
