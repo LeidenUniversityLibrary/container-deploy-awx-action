@@ -1,0 +1,53 @@
+name: Build and Deploy ADOPT
+
+on:
+  push:
+    branches:
+      - main
+      - dev* # This means that the workflow will run on any branch that starts with "dev", e.g. "develop" or "dev-feature"
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ============================================================================
+  # Build & Push Docker Image to GHCR
+  # ============================================================================
+  build:
+    name: Build & Push Container
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-ghcr.yml@main
+    permissions:
+      contents: read
+      packages: write
+    with:
+      context: "."
+      containerfile: "Dockerfile"
+      production_branch: "main"
+    secrets: inherit
+
+  # ============================================================================
+  # Deploy to Staging Environment
+  # ============================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    if: startsWith(github.ref, 'refs/heads/dev') && github.event_name == 'push'
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@main
+    permissions:
+      contents: read
+      packages: read
+    with:
+      environment: staging
+      image: ${{ needs.build.outputs.image }}
+      image_tag: ${{ needs.build.outputs.branch_tag }}
+    secrets: inherit
