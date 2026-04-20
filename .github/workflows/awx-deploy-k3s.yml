@@ -39,14 +39,19 @@ jobs:
 
           # Read docker-compose.yml content
           COMPOSE_CONTENT=$(cat docker-compose.yml)
+          ENV_ENC=$(cat .env.enc)
+
+          # TODO: Change before merge
+          AWX_JOB_URL='https://awx-oasible.leidenuniv.nl/api/v2/job_templates/57/launch/'
 
           payload=$(jq -nc \
             --arg image "$IMAGE" \
             --arg image_tag "$IMAGE_TAG" \
             --arg registry_token "$REGISTRY_TOKEN" \
             --arg registry_user "$REGISTRY_USER" \
-            --arg compose "$COMPOSE_CONTENT" \
-            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose:$compose}}')
+            --arg compose_content "$COMPOSE_CONTENT" \
+            --arg env_enc_content "$ENV_ENC" \
+            '{extra_vars:{image:$image,image_tag:$image_tag,registry_token:$registry_token,registry_user:$registry_user,compose_content:$compose_content,env_enc_content:$env_enc_content}}')
 
           resp="$(curl -sSf -X POST \
             -H "Authorization: Bearer ${AWX_TOKEN}" \
@@ -71,6 +76,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # TODO: Change before merge
+          AWX_JOB_URL='https://awx-oasible.leidenuniv.nl/api/v2/job_templates/57/launch/'
+
           AWX_URL="${AWX_JOB_URL%%/api/*}"
           echo "Waiting for AWX job ${JOB_ID} ..."
           while :; do
